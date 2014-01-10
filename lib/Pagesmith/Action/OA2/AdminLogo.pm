@@ -22,17 +22,21 @@ use base qw(Pagesmith::Action::OA2);
 sub run {
 #@params (self)
 ## Display admin for table for Project in OA2
-  my $self = shift;
-  #return $self->no_content unless $self->user->logged_in;
-  my $user_adap = $self->adaptor('User')->attach_user( $self->user );
-  my $user      = $user_adap->fetch_user_by_username( $self->user->username );
-  #return $self->no_content unless $user;
-  my $project_id = $self->next_path_info;
-  my $project   = $user_adap->project_adaptor->fetch_project( $project_id );
-  #return $self->no_content unless $project->get_user_id == $user->uid;
+  my $self        = shift;
+  return $self->no_content unless $self->user->logged_in;
 
-  my $image_details = $project->get_image;
-  $self->content_type( 'image/png' )->print( $image_details->{'logo_blob'} )->ok;
+  my $user_adap   = $self->adaptor('User')->attach_user( $self->user );
+  my $user        = $user_adap->fetch_user_by_username( $self->user->username );
+  return $self->no_content unless $user;
+
+  my $project_id  = $self->next_path_info;
+  my $project     = $user_adap->project_adaptor->fetch_project( $project_id );
+  return $self->no_content unless $project->get_user_id == $user->uid;
+
+  my $img_details = $project->get_image;
+  return $self->no_content unless $img_details;
+
+  return $self->content_type( 'image/png' )->print( $img_details->{'logo_blob'} )->ok;
 }
 
 1;

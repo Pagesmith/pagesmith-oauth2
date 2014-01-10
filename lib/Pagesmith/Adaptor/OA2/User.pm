@@ -148,4 +148,3 @@ sub fetch_user_by_username {
 1;
 
 __END__
-

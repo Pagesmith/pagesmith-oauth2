@@ -35,15 +35,16 @@ sub run {
   ## Get a list of projects....
   my @projects = @{$user->get_all_projects||[]};
   my @html = '<h2><a class="right btt" href="/form/OA2_Project">Add new project</a>My Projects</p>';
-  
+
   unless( @projects ) {
     push @html, '<p>You do not currently have any projects</p>';
   } else {
     foreach my $project (@projects) {
       my $image_details = $project->get_image;
+      ## no critic (LongChainsOfMethodCalls)
       my $twocol = $self->twocol
         ->add_entry( 'Logo',        $image_details->{'logo_width'}
-                                  ? sprintf '<img src="/oa2/AdminLogo/%d" width="%d" height="%d" alt="*logo" />', 
+                                  ? sprintf '<img src="/oa2/AdminLogo/%d" width="%d" height="%d" alt="*logo" />',
                                       $project->uid, $image_details->{'logo_width'}, $image_details->{'logo_height'}
                                   : '<p>No logo</p>' )
         ->add_entry( 'Description', $self->encode( $project->get_description ) )
@@ -52,9 +53,11 @@ sub run {
         ->add_entry( 'Terms',       sprintf '<%% Link %s %%>', $self->encode( $project->get_terms ) )
         ->add_entry( q(),           sprintf '<a class="btt" href="/form/OA2_Project/%d">Edit project</a>',
                                             $project->uid );
+      ## use critic
       my $clients = $project->get_all_clients;
       my $extra = q();
       if( @{$clients} ) {
+        ## no critic (LongChainsOfMethodCalls)
         $extra = $self->table
           ->add_columns(
             { 'key' => 'get_code',        'label' => 'Client ID',     'format' => 'h' },
@@ -62,6 +65,7 @@ sub run {
             { 'key' => 'get_client_type', 'label' => 'Client type',   'format' => 'h' },
             { 'key' => 'x',               'label' => 'Edit',          'align' => 'c', 'template' => '<a class="btt" href="/form/OA2_Client/[[h:uid]]">Edit</a>' },
           )->add_data( @{$clients} )->render;
+        ## use critic
       } else {
         $extra = '<p>No client ids for this project</p>'
       }
@@ -87,8 +91,6 @@ sub run {
      )->ok;
 }
 
-1;
-
 sub run_not_developer {
   my( $self, $user ) = @_;
 ## Look to see if the user has created
@@ -105,4 +107,6 @@ sub run_not_developer {
 </div>
 <p class="c"><a class="btt" href="%s/agree">I agree to the terms and conditions stated above</a></p>', $THIS_URL )->ok;
 }
+
+1;
 __END__

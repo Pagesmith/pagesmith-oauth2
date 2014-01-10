@@ -70,8 +70,10 @@ sub set_client_id {
 
 sub generate_new_secret {
   my $self = shift;
+
   $self->{'obj'}{'secret'} = $self->safe_uuid;
   $self->{'obj'}{'code'}   = $self->safe_uuid;
+
   return $self;
 }
 ## Property: code
@@ -182,5 +184,4 @@ Purpose
 -------
 
 Object classes are the basis of the Pagesmith OO abstraction layer
-
 

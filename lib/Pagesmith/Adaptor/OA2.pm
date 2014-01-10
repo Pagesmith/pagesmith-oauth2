@@ -30,6 +30,7 @@ sub connection_pars {
 sub attach_user {
   my( $self, $user ) = @_;
   $self->set_user( $user->username );
+  return $self;
 }
 
 sub get_other_adaptor {
@@ -91,4 +92,3 @@ sub url_adaptor {
 1;
 
 __END__
-

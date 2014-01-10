@@ -102,7 +102,7 @@ sub set_client {
   my( $self, $client ) = @_;
   $client = $client->uid if ref $client;
   $self->{'obj'}{'client_id'} = $client;
-  return $self;  
+  return $self;
 }
 
 sub get_client_id {
@@ -148,5 +148,4 @@ Purpose
 -------
 
 Object classes are the basis of the Pagesmith OO abstraction layer
-
 

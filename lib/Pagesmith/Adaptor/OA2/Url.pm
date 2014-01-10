@@ -38,7 +38,7 @@ use Pagesmith::Object::OA2::Url;
 
 sub remove {
   my( $self, $my_object ) = @_;
-  return $self->query( 'delete from url where url_id = ?', $my_object->uid ); 
+  return $self->query( 'delete from url where url_id = ?', $my_object->uid );
 }
 
 sub store {
@@ -47,7 +47,7 @@ sub store {
 ## Store object in database
   my( $self, $my_object ) = @_;
   ## Check that the user has permission to write back to the db ##
-  
+
   return $self->_update( $my_object ) if $my_object->uid;
   return $self->_store(  $my_object ); ## Now we perform the access options ##
 }
@@ -164,4 +164,3 @@ sub fetch_url {
 1;
 
 __END__
-

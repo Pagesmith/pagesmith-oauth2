@@ -125,4 +125,3 @@ sub fetch_access_token {
 1;
 
 __END__
-

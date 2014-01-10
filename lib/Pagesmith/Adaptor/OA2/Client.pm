@@ -158,5 +158,3 @@ sub fetch_client {
 
 1;
 
-__END__
-

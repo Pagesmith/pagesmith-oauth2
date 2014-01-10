@@ -16,31 +16,11 @@ use utf8;
 
 use version qw(qv);our $VERSION = qv('0.1.0');
 
-use Pagesmith::Apache::Action qw(my_handler);
+use Pagesmith::Apache::Action qw(simple_handler);
 
 sub handler {
   my $r = shift;
-  # return($path_munger_sub_ref,$request)
-  # see Pagesmith::Action::_handler to find out how this works
-  # briefly:  munges the url path using the sub {} defined here
-  # to get the action module
-  # then calls its run() method and returns a status value
-
-  return my_handler(
-    sub {
-      my ( $apache_r, $path_info ) = @_;
-      if( $path_info->[0] eq 'oa2' ) {
-        shift @{$path_info};
-        if( @{$path_info} ) {
-          $path_info->[0] = 'OA2_'.$path_info->[0];
-        } else {
-          unshift @{$path_info}, 'OA2';
-        }
-      }
-      return;
-    },
-    $r,
-  );
+  return simple_handler( 'oa2', 'OA2', $r );
 }
 
 1;
