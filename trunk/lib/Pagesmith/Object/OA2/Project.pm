@@ -17,16 +17,21 @@ use utf8;
 use version qw(qv); our $VERSION = qv('0.1.0');
 
 use English qw(-no_match_vars $PID $INPUT_RECORD_SEPARATOR);
-use Const::Fast qw(const);
+
 use Image::Size qw(imgsize);
+use Image::Magick;
 use LWP::Simple qw($ua get);
 use POSIX qw(floor ceil);
+
+use Const::Fast qw(const);
+
 const my $MAX_WIDTH    => 160;
 const my $MAX_HEIGHT   => 120;
 const my $BLUR_EXP     => 1;
 const my $SCALE_FACTOR => 4;
 const my $BLUR         => 0.25;
 const my $TIMEOUT      => 10;
+
 use Pagesmith::ConfigHash qw(proxy_url get_config);
 
 use base qw(Pagesmith::Object::OA2);
@@ -189,11 +194,12 @@ sub store {
 ## Can add additional fetch functions here! probably hand crafted to get
 ## the full details...!
 
-1;
+
 sub get_image {
   my $self = shift;
   return $self->adaptor->get_image( $self );
 }
+
 sub store_image {
   my $self = shift;
   my $logo_url         = $self->get_logo;
@@ -206,13 +212,13 @@ sub store_image {
     my $image_contents = get $logo_url;
     return unless $image_contents;
 
-    my $filename = get_config('RealTmp') . $PID . q(.) . time();
+    my $filename = get_config('RealTmp') . $PID . q(.) . time;
     if( open my $fh, q(>), $filename ) {
-      print {$fh} $image_contents;
-      close $fh;
+      print {$fh} $image_contents; ## no critic (RequireChecked)
+      close $fh; ## no critic (RequireChecked)
       my ( $img_x, $img_y ) = imgsize( $filename );
       if( $img_x && $img_y ) {
-        my $image = new Image::Magick;
+        my $image = Image::Magick->new;
         $image->Read( $filename );
         if( $img_x > $MAX_WIDTH || $img_y > $MAX_HEIGHT ) {
           my $sf_x = ceil( $img_x / $MAX_WIDTH );
@@ -230,7 +236,7 @@ sub store_image {
         if( open my $fh, q(<), "$filename.png" ) {
           local $INPUT_RECORD_SEPARATOR = undef;
           $compressed_image = <$fh>;
-          close $fh;
+          close $fh; ## no critic (RequireChecked)
           $width  = $img_x;
           $height = $img_y;
           unlink "$filename.png";
@@ -242,11 +248,12 @@ sub store_image {
   $self->adaptor->store_image( $self, $width, $height, $compressed_image );
   return $self;
 }
+
+1;
 __END__
 
 Purpose
 -------
 
 Object classes are the basis of the Pagesmith OO abstraction layer
-
 

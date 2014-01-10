@@ -55,7 +55,7 @@ sub update {
 
   my $sql = '
     update permission
-       set 
+       set
      where user_id = ?,
            client_id = ?,
            scope_id = ?';

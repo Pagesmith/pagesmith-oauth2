@@ -124,4 +124,3 @@ sub fetch_scope {
 1;
 
 __END__
-

@@ -56,13 +56,13 @@ sub populate_object_values {
 }
 
 sub _update_object {
-  my( $self, $obj ) = @_;
-  $obj->set_name(         $self->element( 'name'         )->scalar_value );
-  $obj->set_description(  $self->element( 'description'  )->scalar_value );
-  $obj->set_homepage(     $self->element( 'homepage'     )->scalar_value );
-  $obj->set_logo(         $self->element( 'logo'         )->scalar_value );
-  $obj->set_privacy(      $self->element( 'privacy'      )->scalar_value );
-  $obj->set_terms(        $self->element( 'terms'        )->scalar_value );
+  my( $self, $my_object ) = @_;
+  $my_object->set_name(         $self->element( 'name'         )->scalar_value );
+  $my_object->set_description(  $self->element( 'description'  )->scalar_value );
+  $my_object->set_homepage(     $self->element( 'homepage'     )->scalar_value );
+  $my_object->set_logo(         $self->element( 'logo'         )->scalar_value );
+  $my_object->set_privacy(      $self->element( 'privacy'      )->scalar_value );
+  $my_object->set_terms(        $self->element( 'terms'        )->scalar_value );
   return $self;
 }
 

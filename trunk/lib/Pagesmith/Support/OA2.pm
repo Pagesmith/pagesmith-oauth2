@@ -124,5 +124,5 @@ as we can clear it when we create the base adaptor!
 object
  - do my $base_adaptor; in module defn!
  - then line below becomes:
-     - $self->{'_base_adaptor'} ||= $base_adaptor ||= $self->get... 
+     - $self->{'_base_adaptor'} ||= $base_adaptor ||= $self->get...
 

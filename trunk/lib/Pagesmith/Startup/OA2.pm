@@ -37,7 +37,6 @@ BEGIN { unless( exists $ENV{q(SINGLE_LIB_DIR)} && $ENV{q(SINGLE_LIB_DIR)} ) {
   }
 }}
 
-set_default( 'OA2_Test', 44 );
 ## Now we need to include here a list of preloaded use statements if required!
 
 # use Pagesmith::Action::OA2

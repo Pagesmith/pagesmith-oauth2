@@ -125,4 +125,3 @@ sub fetch_auth_code {
 1;
 
 __END__
-

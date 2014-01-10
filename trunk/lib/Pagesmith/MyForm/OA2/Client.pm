@@ -88,7 +88,6 @@ sub update_object {
     if( exists $current->{'redirect'}{$url} ) {
       delete $current->{'redirect'}{$url};
     } else {
-      
       $self->object->add_uri( 'redirect', $url )->store;
     }
   }
