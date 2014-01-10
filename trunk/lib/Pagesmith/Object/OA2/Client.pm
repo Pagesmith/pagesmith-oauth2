@@ -28,6 +28,7 @@ const my $ORDERED_CLIENT_TYPE => [
   'service',
   'installed',
 ];
+
 const my $LOOKUP_CLIENT_TYPE => {
   'installed' => 'installed',
   'service' => 'service',
@@ -106,7 +107,7 @@ sub set_project {
   $self->dumper( $project );
   $project = $project->uid if ref $project;
   $self->{'obj'}{'project_id'} = $project;
-  return $self;  
+  return $self;
 }
 
 sub get_project_id {
