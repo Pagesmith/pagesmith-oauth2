@@ -66,16 +66,16 @@ sub populate_object_values {
   $self->element( 'client_type'  )->set_obj_data( $self->object->get_client_type );
   my @urls = @{$self->object->get_all_urls||[]};
   $self->element( 'redirect_url'       )->set_obj_data(
-    join "\n", map {$_->get_uri} grep { $_->get_url_type eq 'redirect' } @urls );
+    join "\n", sort map {$_->get_uri} grep { $_->get_url_type eq 'redirect' } @urls );
   $self->element( 'javascript_origins' )->set_obj_data(
-    join "\n", map {$_->get_uri} grep { $_->get_url_type eq 'source'   } @urls );
+    join "\n", sort map {$_->get_uri} grep { $_->get_url_type eq 'source'   } @urls );
   return $self;
 }
 
 sub update_object {
   my $self = shift;
   ## Copy form values back to object...
-  $self->object->generate_new_secret if $self->element( 'flush' )->scalar_value;
+  $self->object->generate_new_secret if $self->element( 'flush' )->scalar_value eq 'yes';
   $self->object->set_client_type(  $self->element( 'client_type'  )->scalar_value );
   $self->object->store;
   my $current = {};
