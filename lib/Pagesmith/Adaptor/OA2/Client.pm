@@ -147,7 +147,21 @@ sub fetch_client {
   my $client_hashref = $self->row_hash( $sql, $uid );
   return unless $client_hashref;
   my $client = $self->make_client( $client_hashref );
-  $self->dumper( $client );
+  return $client;
+}
+
+sub fetch_client_by_code {
+#@params (self)
+#@return (Pagesmith::Object::OA2::Client)?
+## Return objects from database with given uid!
+  my( $self, $code ) = @_;
+  my $sql = "
+    select $FULL_COLNAMES$AUDIT_COLNAMES
+      from client o
+    where o.code = ?";
+  my $client_hashref = $self->row_hash( $sql, $code );
+  return unless $client_hashref;
+  my $client = $self->make_client( $client_hashref );
   return $client;
 }
 

@@ -21,8 +21,8 @@ use Const::Fast qw(const);
 ## no critic (ImplicitNewlines)
 
 const my $FULL_COLNAMES  =>
-          'o.refreshtoken_id, o.uuid, o.expires_at, o.access_token_id,
-           o.client_id, o.user_id';
+          'o.refreshtoken_id, o.uuid, unix_timestamp(o.expires_at) as expires_at_ts,
+           o.expires_at, o.client_id, o.user_id';
 
 const my $AUDIT_COLNAMES => q();
 
@@ -78,7 +78,29 @@ sub create {
 ## Create an empty object
   ## Check that the user has permission to write back to the db ##
   my $self = shift;
-  return $self->make_refresh_token({});
+  my ($ts,$ts_unix) = $self->offset(1,'hour');
+  return $self->make_refresh_token({'uuid'=>$self->safe_uuid,'scopes'=>{},'expires_at'=>$ts,'expires_at_ts'=>$ts_unix });
+}
+
+sub create_from_authcode {
+  my( $self, $authcode ) = @_;
+  my ($ts,$ts_unix) = $self->offset(2,'day');
+  my $uuid = $self->safe_uuid;
+  my $token = $self->make_refresh_token( {
+    'uuid'            => $uuid,
+    'scopes'          => $auth_code->scopes_ref,
+    'expires_at'      => $ts,
+    'expires_at_ts'   => $ts_unix,
+  });
+  my $at_id = $self->insert(
+    'insert ignore into refreshtoken (uuid,expires_at,client_id,user_id)
+     select ?,?,client_id,user_id
+       from authcode
+      where authcode_id = ?', 'refreshtoken', 'refreshtoken_id', $uuid,$ts,$authcode->uid );
+  $self->query( 'insert ignore into refreshtoken_scope select ?,scope_id from authcode_scope where authcode_id = ?',
+    $at_id, $authcode->uid );
+  $token->set_refreshtoken_id( $at_id );
+  return $token;
 }
 
 ## Fetch methods..
@@ -95,6 +117,7 @@ sub fetch_refresh_tokens {
   my $sql = "
     select $FULL_COLNAMES$AUDIT_COLNAMES
       from refresh_token o
+     where o.expires_at > now()
      order by refreshtoken_id";
   my $refresh_tokens = [ map { $self->make_refresh_token( $_ ) }
                @{$self->all_hash( $sql )||[]} ];
@@ -109,11 +132,10 @@ sub fetch_refresh_token {
   my $sql = "
     select $FULL_COLNAMES$AUDIT_COLNAMES
       from refresh_token o
-    where o.refreshtoken_id = ?";
+    where o.refreshtoken_id = ? and o.expires_at > now()";
   my $refresh_token_hashref = $self->row_hash( $sql, $uid );
   return unless $refresh_token_hashref;
   my $refresh_token = $self->make_refresh_token( $refresh_token_hashref );
-  $self->dumper( $refresh_token );
   return $refresh_token;
 }
 
@@ -121,6 +143,19 @@ sub fetch_refresh_token {
 ## ----------------------
 
 ## use critic
+
+sub clear_scopes {
+  my ( $self, $refresh_token ) = @_;
+  $refresh_token = ref $refresh_token ? $refresh_token->uid : $refresh_token;
+  return $self->query( 'delete from refreshtoken_scope where refreshtoken_id = ?', $refresh_token );
+}
+
+sub add_scope {
+  my ( $self, $refresh_token, $scope ) = @_;
+  $refresh_token = ref $refresh_token ? $refresh_token->uid : $refresh_token;
+  $scope     = ref $scope     ? $scope->uid     : $scope;
+  return $self->query( 'insert ignore into refreshtoken_scope (refreshtoken_id,scope_id) values(?,?)', $refresh_token, $scope );
+}
 
 1;
 

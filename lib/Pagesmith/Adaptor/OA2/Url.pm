@@ -57,7 +57,7 @@ sub _store {
 #@return (boolean)
 ## Create a new entry in database
   my( $self, $my_object ) = @_;
-  my $uid = $self->insert( 'insert into url (url_type,uri,client_id,created_at,created_by) values (?,?,?)',
+  my $uid = $self->insert( 'insert into url (url_type,uri,client_id,created_at,created_by) values (?,?,?,?,?)',
     'url', 'url_id',
     $my_object->get_url_type, $my_object->get_uri, $my_object->get_client_id, $self->now, $self->user );
   return unless $uid;
@@ -70,7 +70,7 @@ sub _update {
 #@return (boolean)
 ## Create a new entry in database
   my( $self, $my_object ) = @_;
-  return $self->query( 'update url set url_type = ?, uri = ?, client_id = ?, updated_at, updated_by where url_id = ?',
+  return $self->query( 'update url set url_type = ?, uri = ?, client_id = ?, updated_at = ?, updated_by = ? where url_id = ?',
     $my_object->get_url_type, $my_object->get_uri, $my_object->get_client_id,
     $self->now, $self->user, $my_object->uid );
 }
@@ -140,6 +140,22 @@ sub fetch_all_urls_by_client {
   return $urls;
 }
 
+sub fetch_all_urls_by_client_and_type {
+#@params (self)
+#@return (Pagesmith::Object::OA2::Url)*
+## Return all objects from database!
+  my( $self, $client, $type ) = @_;
+  $client = $client->uid if ref $client;
+  my $sql = "
+    select $FULL_COLNAMES$AUDIT_COLNAMES
+      from url o
+     where client_id = ? and url_type = ?
+     order by url_id";
+  my $urls = [ map { $self->make_url( $_ ) }
+               @{$self->all_hash( $sql, $client, $type )||[]} ];
+  return $urls;
+}
+
 sub fetch_url {
 #@params (self)
 #@return (Pagesmith::Object::OA2::Url)?
@@ -152,7 +168,6 @@ sub fetch_url {
   my $url_hashref = $self->row_hash( $sql, $uid );
   return unless $url_hashref;
   my $url = $self->make_url( $url_hashref );
-  $self->dumper( $url );
   return $url;
 }
 

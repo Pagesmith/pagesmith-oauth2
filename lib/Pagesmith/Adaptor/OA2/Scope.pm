@@ -100,6 +100,22 @@ sub fetch_scopes {
   return $scopes;
 }
 
+sub fetch_scopes_by_authcode {
+#@params (self)
+#@return (Pagesmith::Object::OA2::Scope)*
+## Return all objects from database!
+  my( $self, $auth_code ) = @_;
+  $auth_code = ref $auth_code ? $auth_code->uid : $auth_code;
+  my $sql = "
+    select $FULL_COLNAMES$AUDIT_COLNAMES
+      from scope o, authcode_scope as acs
+     where o.scope_id = acs.scope_id and acs.authcode_id = ?
+     order by o.scope_id";
+  my $scopes = [ map { $self->make_scope( $_ ) }
+               @{$self->all_hash( $sql, $auth_code )||[]} ];
+  return $scopes;
+}
+
 sub fetch_scope {
 #@params (self)
 #@return (Pagesmith::Object::OA2::Scope)?
@@ -112,7 +128,6 @@ sub fetch_scope {
   my $scope_hashref = $self->row_hash( $sql, $uid );
   return unless $scope_hashref;
   my $scope = $self->make_scope( $scope_hashref );
-  $self->dumper( $scope );
   return $scope;
 }
 
