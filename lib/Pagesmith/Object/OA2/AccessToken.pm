@@ -17,6 +17,7 @@ use utf8;
 use version qw(qv); our $VERSION = qv('0.1.0');
 
 use base qw(Pagesmith::Object::OA2);
+use List::MoreUtils qw(any);
 
 use Const::Fast qw(const);
 
@@ -80,27 +81,61 @@ sub set_expires_at {
   return $self;
 }
 
+sub expires_in {
+  my $self = shift;
+  return $self->{'obj'}{'expires_at_ts'} - time;
+}
+
 ## Has "1" get/setters
 ## ===================
 
+sub set_refreshtoken {
+  my( $self, $ref_token ) = @_;
+  $self->{'obj'}{'refreshtoken_id'} = ref $ref_token ? $ref_token->uid : $ref_token;
+  return $self;
+}
+
+sub get_refreshtoken_id {
+  my $self = shift;
+  return $self->{'obj'}{'refreshtoken_id'}||0;
+}
+
 sub get_refresh_token {
   my $self = shift;
-  return $self->get_other_adaptor( 'RefreshToken' )->fetch_refresh_token_by_access_token( $self );
+  return unless $self->get_refreshtoken_id;
+  return $self->get_other_adaptor( 'RefreshToken' )->fetch_refresh_token( $self->get_refreshtoken_id );
+}
+
+sub set_client {
+  my( $self, $client ) = @_;
+  $self->{'obj'}{'client_id'} = ref $client ? $client->uid : $client;
+  return $self;
+}
+
+sub get_client_id {
+  my $self = shift;
+  return $self->{'obj'}{'client_id'}||0;
 }
 
 sub get_client {
   my $self = shift;
-  return $self->get_other_adaptor( 'Client' )->fetch_client_by_access_token( $self );
+  return $self->get_other_adaptor( 'Client' )->fetch_client( $self->get_client_id );
+}
+
+sub set_user {
+  my( $self, $user ) = @_;
+  $self->{'obj'}{'user_id'} = ref $user ? $user->uid : $user;
+  return $self;
+}
+
+sub get_user_id {
+  my $self = shift;
+  return $self->{'obj'}{'user_id'}||0;
 }
 
 sub get_user {
   my $self = shift;
-  return $self->get_other_adaptor( 'User' )->fetch_user_by_access_token( $self );
-}
-
-sub get_scope {
-  my $self = shift;
-  return $self->get_other_adaptor( 'Scope' )->fetch_scope_by_access_token( $self );
+  return $self->get_other_adaptor( 'User' )->fetch_user( $self->get_user_id );
 }
 
 ## Has "many" getters
@@ -121,6 +156,41 @@ sub store {
 ## ======================
 ## Can add additional fetch functions here! probably hand crafted to get
 ## the full details...!
+
+sub has_scope {
+  my( $self, $scope_code ) = @_;
+  return any { $_->get_code eq $scope_code } $self->scopes;
+}
+
+sub add_scope {
+  my( $self, $scope ) = @_;
+  $self->fetch_scopes unless exists $self->{'scopes'};
+  my $scope_uid = ref $scope ? $scope->uid : $scope;
+  unless( $self->{'scopes'}{$scope->uid} ) {
+    $self->{'scopes'}{$scope->uid} = $scope;
+    $self->adaptor->add_scope( $self, $scope );
+  }
+  return $self;
+}
+
+sub clear_scopes {
+  my $self = shift;
+  $self->{'scopes'} = {};
+  $self->adaptor->clear_scopes( $self );
+  return $self;
+}
+
+sub scopes {
+  my $self = shift;
+  $self->fetch_scopes unless exists $self->{'scopes'};
+  return values %{$self->{'scopes'}};
+}
+
+sub fetch_scopes {
+  my $self = shift;
+  $self->{'scopes'} = {map { $_->uid => $_ } @{$self->scope_adaptor->fetch_scopes_by_authcode( $self )}};
+  return $self;
+}
 
 1;
 

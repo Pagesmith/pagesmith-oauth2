@@ -66,6 +66,20 @@ sub set_uuid {
   return $self;
 }
 
+## Property: access_type
+## --------------------
+
+sub get_access_type {
+  my $self = shift;
+  return $self->{'obj'}{'access_type'};
+}
+
+sub set_access_type {
+  my ( $self, $value ) = @_;
+  $self->{'obj'}{'access_type'} = $value;
+  return $self;
+}
+
 ## Property: expires_at
 ## --------------------
 
@@ -80,27 +94,96 @@ sub set_expires_at {
   return $self;
 }
 
+sub expires_in {
+  my $self = shift;
+  return $self->{'obj'}{'expires_at_ts'} - time;
+}
+
 ## Has "1" get/setters
 ## ===================
 
+sub set_user {
+  my( $self, $user ) = @_;
+  $self->{'obj'}{'user_id'} = ref $user ? $user->uid : $user;
+  return $self;
+}
+
+sub get_user_id {
+  my $self = shift;
+  return $self->{'obj'}{'user_id'}||0;
+}
+
 sub get_user {
   my $self = shift;
-  return $self->get_other_adaptor( 'User' )->fetch_user_by_auth_code( $self );
+  return $self->get_other_adaptor( 'User' )->fetch_user( $self->get_user_id );
+}
+
+sub set_client {
+  my( $self, $client ) = @_;
+  $self->{'obj'}{'client_id'} = ref $client ? $client->uid : $client;
+  return $self;
+}
+
+sub get_client_id {
+  my $self = shift;
+  return $self->{'obj'}{'client_id'}||0;
 }
 
 sub get_client {
   my $self = shift;
-  return $self->get_other_adaptor( 'Client' )->fetch_client_by_auth_code( $self );
+  return $self->get_other_adaptor( 'Client' )->fetch_client( $self->get_client_id );
+}
+
+sub set_url {
+  my( $self, $url ) = @_;
+  $self->{'obj'}{'url_id'} = ref $url ? $url->uid : $url;
+  return $self;
+}
+
+sub get_url_id {
+  my $self = shift;
+  return $self->{'obj'}{'url_id'}||0;
 }
 
 sub get_url {
   my $self = shift;
-  return $self->get_other_adaptor( 'Url' )->fetch_url_by_auth_code( $self );
+  return $self->get_other_adaptor( 'Url' )->fetch_url( $self->get_url_id );
 }
 
-sub get_scope {
+sub add_scope {
+  my( $self, $scope ) = @_;
+  $self->fetch_scopes unless exists $self->{'scopes'};
+  my $scope_uid = ref $scope ? $scope->uid : $scope;
+  unless( $self->{'scopes'}{$scope->uid} ) {
+    $self->{'scopes'}{$scope->uid} = $scope;
+    $self->adaptor->add_scope( $self, $scope );
+  }
+  return $self;
+}
+
+sub clear_scopes {
   my $self = shift;
-  return $self->get_other_adaptor( 'Scope' )->fetch_scope_by_auth_code( $self );
+  $self->{'scopes'} = {};
+  $self->adaptor->clear_scopes( $self );
+  return $self;
+}
+
+sub scopes_ref {
+  my $self = shift;
+  $self->fetch_scopes unless exists $self->{'scopes'};
+  return $self->{'scopes'};
+}
+
+sub scopes {
+  my $self = shift;
+  $self->fetch_scopes unless exists $self->{'scopes'};
+  return values %{$self->{'scopes'}};
+}
+
+sub fetch_scopes {
+  my $self = shift;
+  $self->{'scopes'} = {map { $_->uid => $_ } @{$self->scope_adaptor->fetch_scopes_by_authcode( $self )}};
+  return $self;
 }
 
 ## Has "many" getters
@@ -122,6 +205,15 @@ sub store {
 ## Can add additional fetch functions here! probably hand crafted to get
 ## the full details...!
 
+sub create_accesstoken {
+  my $self = shift;
+  return $self->accesstoken_adaptor->create_from_authcode( $self );
+}
+
+sub create_refreshtoken {
+  my $self = shift;
+  return $self->refreshtoken_adaptor->create_from_authcode( $self );
+}
 1;
 
 __END__
