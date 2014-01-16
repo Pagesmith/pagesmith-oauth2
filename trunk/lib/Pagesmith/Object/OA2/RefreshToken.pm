@@ -80,6 +80,11 @@ sub set_expires_at {
   return $self;
 }
 
+sub expires_in {
+  my $self = shift;
+  return $self->{'obj'}{'expires_at_ts'} - time;
+}
+
 ## Has "1" get/setters
 ## ===================
 
@@ -121,6 +126,47 @@ sub store {
 ## ======================
 ## Can add additional fetch functions here! probably hand crafted to get
 ## the full details...!
+
+sub add_scope {
+  my( $self, $scope ) = @_;
+  $self->fetch_scopes unless exists $self->{'scopes'};
+  my $scope_uid = ref $scope ? $scope->uid : $scope;
+  unless( $self->{'scopes'}{$scope->uid} ) {
+    $self->{'scopes'}{$scope->uid} = $scope;
+    $self->adaptor->add_scope( $self, $scope );
+  }
+  return $self;
+}
+
+sub clear_scopes {
+  my $self = shift;
+  $self->{'scopes'} = {};
+  $self->adaptor->clear_scopes( $self );
+  return $self;
+}
+
+sub scopes {
+  my $self = shift;
+  $self->fetch_scopes unless exists $self->{'scopes'};
+  return values %{$self->{'scopes'}};
+}
+
+sub scopes_ref {
+  my $self = shift;
+  $self->fetch_scopes unless exists $self->{'scopes'};
+  return $self->{'scopes'};
+}
+
+sub fetch_scopes {
+  my $self = shift;
+  $self->{'scopes'} = {map { $_->uid => $_ } @{$self->scope_adaptor->fetch_scopes_by_authcode( $self )}};
+  return $self;
+}
+
+sub create_accesstoken {
+  my $self = shift;
+ return $self->accesstoken_adaptor->create_from_refreshtoken( $self );
+}
 
 1;
 

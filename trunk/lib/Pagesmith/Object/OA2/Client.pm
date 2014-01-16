@@ -106,7 +106,6 @@ sub set_secret {
 
 sub set_project {
   my( $self, $project ) = @_;
-  $self->dumper( $project );
   $project = $project->uid if ref $project;
   $self->{'obj'}{'project_id'} = $project;
   return $self;
@@ -149,6 +148,11 @@ sub get_project {
 sub get_all_urls {
   my $self = shift;
   return $self->get_other_adaptor( 'Url' )->fetch_all_urls_by_client( $self );
+}
+
+sub get_all_redirect_urls {
+  my $self = shift;
+  return $self->get_other_adaptor( 'Url' )->fetch_all_urls_by_client_and_type( $self, 'redirect' );
 }
 
 sub add_uri {

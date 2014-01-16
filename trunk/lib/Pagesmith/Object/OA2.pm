@@ -156,6 +156,11 @@ sub url_adaptor {
   return $self->get_other_adaptor( 'UrlToken' );
 }
 
+sub permission_adaptor {
+  my $self = shift;
+  return $self->get_other_adaptor( 'Permission' );
+}
+
 1;
 
 __END__

@@ -58,6 +58,28 @@ sub set_user_id {
 ## Property: username
 ## ------------------
 
+sub get_auth_method {
+  my $self = shift;
+  return $self->{'obj'}{'auth_method'};
+}
+
+sub set_auth_method {
+  my ( $self, $value ) = @_;
+  $self->{'obj'}{'auth_method'} = $value;
+  return $self;
+}
+
+sub get_name {
+  my $self = shift;
+  return $self->{'obj'}{'name'};
+}
+
+sub set_name {
+  my ( $self, $value ) = @_;
+  $self->{'obj'}{'name'} = $value;
+  return $self;
+}
+
 sub get_username {
   my $self = shift;
   return $self->{'obj'}{'username'};
@@ -86,8 +108,34 @@ sub set_developer {
   return $self;
 }
 
-## Has "1" get/setters
+## Permissions
 ## ===================
+
+sub get_permissions {
+  my( $self, $project ) = @_;
+  return $self->permission_adaptor->get_permissions_by_user_project( $self, $project );
+}
+
+sub add_permission {
+  my( $self, $project, $scope, $status ) = @_;
+  return $self->permission_adaptor->store({ 'project' => $project, 'user' => $self, 'scope' => $scope, $status = $status } );
+}
+
+## Authcodes...
+## ============
+
+sub create_auth_code {
+  my( $self, $client, $url, $access_type ) = @_;
+  ## no critic (LongChainsOfMethodCalls)
+  my $ac_obj = $self->authcode_adaptor->create
+    ->set_user(   $self )
+    ->set_client( $client )
+    ->set_url(    $url )
+    ->set_access_type( $access_type );
+  ## use critic;
+  $ac_obj->store;
+  return $ac_obj;
+}
 
 ## Has "many" getters
 ## ==================
