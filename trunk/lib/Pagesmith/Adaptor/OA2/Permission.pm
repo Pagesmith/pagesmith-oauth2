@@ -21,7 +21,7 @@ use base qw(Pagesmith::Adaptor::OA2);
 use Const::Fast qw(const);
 ## no critic (ImplicitNewlines)
 
-const my $DATA_COLUMNS => q();
+const my $DATA_COLUMNS => q(, rel.status);
 
 ## ----------------------------------------------------------------------
 ## Store and update methods
@@ -31,38 +31,42 @@ sub store {
 #@params (self) ()
 #@return (boolean)
 ## Store value of relationship in database
-  my( $self, $pars ) = @_;
+  my( $self, $params ) = @_;
 
   my $sql = '
     insert ignore into permission
          ( user_id,
-           client_id,
+           project_id,
            scope_id )
   values ( ?,?,? )';
 
-  $self->query( $sql,exists $params->{'user_id'} ? $params->{'user_id'} : $params->{'user'}->user_id,
-           exists $params->{'client_id'} ? $params->{'client_id'} : $params->{'client'}->client_id,
-           exists $params->{'scope_id'} ? $params->{'scope_id'} : $params->{'scope'}->scope_id,
+  $self->query( $sql,
+    ref $params->{'user'}    ? $params->{'user'}->uid    : $params->{'user'},
+    ref $params->{'project'} ? $params->{'project'}->uid : $params->{'project'},
+    ref $params->{'scope'}   ? $params->{'scope'}->uid   : $params->{'scope'},
   );
-  return $self->update( $pars );
+  return $self->update( $params );
+
 }
 
 sub update {
 #@params (self) (hash)
 #@return (boolean)
 ## Store value of relationship in database
-  my( $self, $pars ) = @_;
+  my( $self, $params ) = @_;
 
   my $sql = '
     update permission
-       set
-     where user_id = ?,
-           client_id = ?,
-           scope_id = ?';
+       set status = ?
+     where user_id    = ? and
+           project_id = ? and
+           scope_id   = ?';
 
-  return $self->query( $sql,exists $params->{'user_id'} ? $params->{'user_id'} : $params->{'user'}->user_id,
-           exists $params->{'client_id'} ? $params->{'client_id'} : $params->{'client'}->client_id,
-           exists $params->{'scope_id'} ? $params->{'scope_id'} : $params->{'scope'}->scope_id,
+  return $self->query( $sql,
+    exists $params->{'status'} && $params->{'status'} eq 'refused' ? 'refused' : 'granted',
+    ref $params->{'user'}    ? $params->{'user'}->uid    : $params->{'user'},
+    ref $params->{'project'} ? $params->{'project'}->uid : $params->{'project'},
+    ref $params->{'scope'}   ? $params->{'scope'}->uid   : $params->{'scope'},
   );
 }
 
@@ -73,27 +77,51 @@ sub update {
 sub get_permission {
 #@param (self)
 #@param (Pagesmith::Adaptor::OA2::User|integer) user
-#@param (Pagesmith::Adaptor::OA2::Client|integer) client
+#@param (Pagesmith::Adaptor::OA2::Project|integer) project
 #@param (Pagesmith::Adaptor::OA2::Scope|integer) scope
 #@returns (hash)?
 ## Fetch single row from database
-  my( $self, $user, $client, $scope )  = @_;
+  my( $self, $user, $project, $scope )  = @_;
   my $sql = '
     select ? as user_id,
-           ? as client_id, ? as client_code,
-           ? as scope_id'.$DATA_COLUMNS.'
+           ? as project_id, ? as project_name,
+           ? as scope_id, s.code'.$DATA_COLUMNS.'
       from permission as rel
-     where rel.user_id=?,
-           rel.client_id=?,
+     where rel.user_id=?    and
+           rel.project_id=? and
            rel.scope_id=?';
-  return $self->hash( $sql,
-    ref $user ? $user->id : $user,
-    ref $client ? $client->id : $client,
-    ref $client ? $client->code : q(-),
-    ref $scope ? $scope->id : $scope,
-    $user->id,
-    $client->id,
-    $scope->id );
+  return $self->row_hash( $sql,
+    ref $user    ? $user->uid         : $user,
+    ref $project ? $project->uid      : $project,
+    ref $project ? $project->get_name : q(-),
+    ref $scope   ? $scope->uid        : $scope,
+    ref $scope   ? $scope->get_code   : q(-),
+    ref $user    ? $user->uid         : $user,
+    ref $project ? $project->uid      : $project,
+    ref $scope   ? $scope->uid        : $scope );
+}
+
+sub get_permissions_by_user_project {
+#@param (self)
+#@param (Pagesmith::Adaptor::OA2::User|integer) user
+#@param (Pagesmith::Adaptor::OA2::Project|integer) project
+#@returns (hash)?
+## Fetch single row from database
+  my( $self, $user, $project )  = @_;
+  my $sql = '
+    select ? as user_id,
+           ? as project_id, ? as project_name,
+           rel.scope_id, s.code'.$DATA_COLUMNS.'
+      from permission as rel, scope s
+     where rel.user_id=? and rel.scope_id = s.scope_id and
+           rel.project_id=?';
+  return $self->all_hash( $sql,
+    ref $user    ? $user->uid         : $user,
+    ref $project ? $project->uid      : $project,
+    ref $project ? $project->get_name : q(-),
+    ref $user    ? $user->uid         : $user,
+    ref $project ? $project->uid      : $project,
+  );
 }
 
 sub get_all_permission {
@@ -103,12 +131,12 @@ sub get_all_permission {
   my( $self )  = @_;
   my $sql = '
     select rel.user_id,
-           rel.client_id,
-           client.code as client_code,
-           rel.scope_id'.$DATA_COLUMNS.'
-      from permission as rel, user, client, scope
-     where rel.user_id=user.user_id,
-           rel.client_id=client.client_id,
+           rel.project_id,
+           project.name as project_name,
+           rel.scope_id, s.code'.$DATA_COLUMNS.'
+      from permission as rel, user, project, scope
+     where rel.user_id=user.user_id and
+           rel.project_id=project.project_id and
            rel.scope_id=scope.scope_id';
   return $self->all_hash( $sql )||[];
 }

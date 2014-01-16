@@ -21,7 +21,7 @@ use Const::Fast qw(const);
 ## no critic (ImplicitNewlines)
 
 const my $FULL_COLNAMES  =>
-          'o.user_id, o.uuid, o.username, o.developer';
+          'o.user_id, o.uuid, o.username, o.developer, o.name, o.auth_method';
 
 const my $AUDIT_COLNAMES => q(, o.created_at, o.updated_at, o.created_by, o.updated_by, o.ip, o.useragent);
 
@@ -51,10 +51,12 @@ sub _store {
 #@return (boolean)
 ## Create a new entry in database
   my ($self, $my_object ) = @_;
-  return $self->query( 'insert into user (username,uuid,created_at,created_by,developer)
-                           values (?,?,?,?,?)',
+  my $uid = $self->insert( 'insert into user (username,uuid,created_at,created_by,developer,name,auth_method)
+                           values (?,?,?,?,?,?,?)', 'user', 'user_id',
      $my_object->get_username, $my_object->get_uuid, $my_object->now,
-     $self->user, $my_object->get_developer );
+     $self->user, $my_object->get_developer, $my_object->get_name, $my_object->get_auth_method );
+  $my_object->set_user_id( $uid );
+  return $uid;
 }
 
 sub _update {
@@ -62,9 +64,9 @@ sub _update {
 #@return (boolean)
 ## Create a new entry in database
   my ($self, $my_object ) = @_;
-  return $self->query( 'update user set username = ?, updated_at = ?, updated_by = ?, developer = ?
+  return $self->query( 'update user set username = ?, updated_at = ?, updated_by = ?, developer = ?, name = ?, auth_method = ?
                   where user_id = ?',
-     $my_object->get_username, $my_object->now, $self->user, $my_object->get_developer,
+     $my_object->get_username, $my_object->now, $self->user, $my_object->get_developer, $my_object->get_name, $my_object->get_auth_method,
      $my_object->get_user_id );
 }
 

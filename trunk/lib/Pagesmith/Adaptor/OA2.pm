@@ -79,6 +79,11 @@ sub accesstoken_adaptor {
   return $self->get_other_adaptor( 'AccessToken' );
 }
 
+sub permission_adaptor {
+  my $self = shift;
+  return $self->get_other_adaptor( 'Permission' );
+}
+
 sub refreshtoken_adaptor {
   my $self = shift;
   return $self->get_other_adaptor( 'RefreshToken' );
