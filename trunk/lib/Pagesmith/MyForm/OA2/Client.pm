@@ -213,17 +213,7 @@ sub initialize_form {
 
   $self->add_redirect_stage( '/oa2/Dashboard' );
 
-  $self->add_error_stage( 'not_logged_in' );
-    $self->add_raw_section( '<% File /core/inc/forms/no_user.inc %>' );
-
-  $self->add_error_stage( 'not_a_developer' );
-    $self->add_raw_section( '<% File /oa2-core/inc/forms/not_a_developer.inc %>' );
-
-  $self->add_error_stage( 'unknown_project' );
-    $self->add_raw_section( '<% File /oa2-core/inc/forms/unknown_project.inc %>' );
-
-  $self->add_error_stage( 'no_permission'  );
-    $self->add_raw_section( '<% File /core/inc/forms/no_permission.inc %>' );
+  $self->permission_stages;
 
   return $self;
 }

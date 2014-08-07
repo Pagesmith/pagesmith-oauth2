@@ -55,6 +55,21 @@ sub my_oa_user_id {
   return $self->{'my_oa_user_id'};
 }
 
+sub permission_stages {
+  my $self = shift;
+  $self->add_error_stage( 'not_logged_in' );
+    $self->add_raw_section( '<% File /core/inc/forms/no_user.inc %>' );
+
+  $self->add_error_stage( 'not_a_developer' );
+    $self->add_raw_section( '<p>You are not currently a developer</p>' );
+
+  $self->add_error_stage( 'unknown_project' );
+    $self->add_raw_section( '<p>Sorry I do not recognise the project you have entered</p>' );
+
+  $self->add_error_stage( 'no_permission'  );
+    $self->add_raw_section( '<% File /core/inc/forms/no_permission.inc %>' );
+  return $self;
+}
 1;
 
 __END__
