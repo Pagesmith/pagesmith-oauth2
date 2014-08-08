@@ -1,4 +1,4 @@
-package Pagesmith::Action::OA2::Revoke;
+package Pagesmith::Action::OA2::Remove;
 
 #+----------------------------------------------------------------------
 #| Copyright (c) 2014 Genome Research Ltd.
@@ -38,34 +38,17 @@ use version qw(qv); our $VERSION = qv('0.1.0');
 
 use base qw(Pagesmith::Action::OA2);
 
-use Const::Fast qw(const);
-
-const my $METHODS => {
-  'Project'      => 'fetch_project_by_code',
-  'AccessToken'  => 'fetch_accesstoken_by_uuid',
-  'RefreshToken' => 'fetch_refreshtoken_by_uuid',
-};
-
 sub run {
   my $self = shift;
-  my $type = $self->next_path_info;
-  return $self->no_content unless exists $METHODS->{$type};
-
-  my $method = $METHODS->{$type};
-  my $my_obj = $self->adaptor( $type )->$method( $self->next_path_info );
-  return $self->no_content unless exists $METHODS->{$type};
-  $my_obj->revoke( $self->me );
-  if( $type eq 'Project' ) {
-    $self->flash_message( {
-      'title' => 'Tokens revoked',
-      'body'  => sprintf 'All tokens have been revoked for application "%s"', $self->encode( $my_obj->get_name ),
-    } );
-  } else {
-    $self->flash_message( {
-      'title' => 'Tokens revoked',
-      'body'  => 'The selected tokens have been revoked',
-    } );
-  }
+  my $project = $self->adaptor('Project')->fetch_project_by_code( $self->next_path_info );
+  $self->dumper( $project );
+  my $user    = $self->me;
+  return $self->no_content unless $user && $project;
+  my $res = $project->remove( $user );
+  $self->flash_message( {
+    'title' => 'Permissions revoked',
+    'body'  => sprintf 'All permissions have been revoked for application "%s"', $self->encode( $project->get_name ),
+  } );
   return $self->redirect( '/oa2/Dashboard' );
 }
 

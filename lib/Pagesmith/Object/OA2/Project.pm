@@ -120,6 +120,17 @@ sub store_image {
   return $self;
 }
 
+sub revoke {
+  my( $self, $user ) = @_;
+  return $self->adaptor->revoke( $self, $user );
+}
+
+sub remove {
+  my( $self, $user ) = @_;
+  return $self->adaptor->revoke( $self, $user ) + ## removes authcode, 
+         $self->get_other_adaptor( 'Permission' )->revoke( $self, $user );
+}
+
 1;
 
 __END__

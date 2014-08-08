@@ -39,6 +39,39 @@ use version qw(qv); our $VERSION = qv('0.1.0');
 
 use base qw(Pagesmith::Object::OA2);
 use Pagesmith::Utils::ObjectCreator qw(bake);
+use List::MoreUtils qw(any);
+
+sub has_scope {
+  my ( $self, $scope_code ) = @_;
+  return any { $_->get_code eq $scope_code } $self->scopes;
+}
+
+sub fetch_scopes {
+   my $self = shift;
+   $self->{'scopes'} = {map { $_->uid => $_ } @{$self->get_other_adaptor('Scope')->fetch_scopes_by_refreshtoken( $self )}};
+   return $self;
+}
+
+sub scopes {
+  my $self = shift;
+  $self->fetch_scopes unless exists $self->{'scopes'};
+  return values %{$self->{'scopes'}};
+}
+
+sub scopes_ref {
+  my $self = shift;
+  return $self->{'scopes'};
+}
+
+sub expires_in {
+  my $self = shift;
+  return $self->{'obj'}{'expires_at_ts'} - time;
+}
+
+sub revoke {
+  my( $self, $user ) = @_;
+  return $self->adaptor->revoke( $self, $user );
+}
 
 ## Last bit - bake all remaining methods!
 bake();

@@ -71,6 +71,11 @@ sub expires_in {
   return $self->{'obj'}{'expires_at_ts'} - time;
 }
 
+sub revoke {
+  my( $self, $user ) = @_;
+  return $self->adaptor->revoke( $self, $user );
+}
+
 bake();
 
 1;

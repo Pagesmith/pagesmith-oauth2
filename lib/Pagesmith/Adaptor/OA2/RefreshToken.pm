@@ -74,6 +74,20 @@ sub add_scope {
   return $self->query( 'insert ignore into refreshtoken_scope (authcode_id,scope_id) values(?,?)', $auth_code->uid, $scope->uid );
 }
 
+sub revoke {
+  my( $self, $refreshtoken, $user ) = @_;
+  return
+    $self->query(
+      'delete accesstoken_scope, accesstoken from accesstoken, accesstoken_scope
+        where accesstoken.user_id = ? and accesstoken.refreshtoken_id = ? and accesstoken.accesstoken_id = accesstoken_scope.accesstoken_id',
+      $user->uid, $refreshtoken->uid ) +
+     $self->query(
+      'delete refreshtoken_scope, refreshtoken from accesstoken, accesstoken_scope
+        where refreshtoken.user_id = ? and refreshtoken.refreshtoken_id = ? and refreshtoken.refreshtoken_id = refreshtoken_scope.refreshtoken_id
+        where refreshtoken_id = ? and user_id = ?',
+      $user->uid, $refreshtoken->uid );
+}
+
 bake();
 
 1;

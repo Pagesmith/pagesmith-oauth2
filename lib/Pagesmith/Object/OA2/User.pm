@@ -67,6 +67,10 @@ sub get_permissions {
   my( $self, $project ) = @_;
   return $self->get_other_adaptor( 'Permission' )->fetch_permissions_by_user_project( $self, $project );
 }
+sub fetch_permitted_projects {
+  my $self = shift;
+  return $self->get_other_adaptor( 'Project' )->fetch_permitted_projects( $self );
+}
 sub fetch_projects {
   my $self = shift;
   return $self->get_other_adaptor( 'Project' )->fetch_projects_by_user( $self );

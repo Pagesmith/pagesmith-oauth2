@@ -62,6 +62,11 @@ sub add_permission {
                        $user->uid, $project->uid, $scope->uid, $flag );
 }
 
+sub revoke {
+  my( $self, $project, $user ) = @_;
+  return $self->query( 'delete from permission where project_id = ? and user_id = ?', $project->uid, $user->uid );
+}
+
 bake();
 
 1;
