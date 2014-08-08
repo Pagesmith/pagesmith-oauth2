@@ -44,6 +44,27 @@ use Pagesmith::Utils::ObjectCreator qw(bake);
 ## Last bit - bake all remaining methods!
 bake();
 
+sub fetch_permitted_projects {
+  my ($self,$user) = @_;
+  my $user_id = defined $user ? ( ref $user ? $user->uid : $user ) : $self->user_id;
+  my $res = $self->all_hash( '
+     select '.$self->full_column_names.$self->audit_column_names.', perm.scope_id, perm.allowed
+       from '.$self->select_tables.', permission perm
+      where o.project_id = perm.project_id and perm.user_id = ?',
+     $user_id );
+  my $objs = {};
+  foreach (@{$res}) {
+    $objs->{ $_->{'project_id'} } ||= [ $self->make_project($_), {} ];
+    $objs->{ $_->{'project_id'} }[1]{ $_->{'scope_id'} } = $_->{'allowed'};
+  }
+  my @return;
+  foreach ( values $objs ) {
+    $_->[0]->set_attribute( 'scopes', $_->[1] );
+    push @return, $_->[0];
+  }
+  return \@return;
+}
+
 sub get_image {
   my( $self, $my_object ) = @_;
   return $self->row_hash( 'select logo_width, logo_height, logo_blob
@@ -62,6 +83,30 @@ sub store_image {
   return $self->query( 'update project set logo_width = ?, logo_height = ?, logo_blob = ? where project_id = ?',
     $width, $height, $compressed_image, $my_object->uid );
 }
+
+sub revoke {
+  my( $self, $project, $user ) = @_;
+  return
+    $self->query(
+      'delete authcode, authcode_scope from authcode, authcode_scope, client
+        where client.project_id = ? and authcode.client_id = client.client_id and authcode.user_id = ? and
+              authcode.authcode_id = authcode_scope.authcode_id',
+        $project->uid, $user->uid,
+    ) +
+    $self->query(
+      'delete accesstoken, accesstoken_scope from accesstoken, accesstoken_scope, client
+        where client.project_id = ? and accesstoken.client_id = client.client_id and accesstoken.user_id = ? and
+              accesstoken.accesstoken_id = accesstoken_scope.accesstoken_id',
+        $project->uid, $user->uid,
+    ) +
+    $self->query(
+      'delete refreshtoken, refreshtoken_scope from refreshtoken, client, refreshtoken_scope
+        where client.project_id = ? and refreshtoken.client_id = client.client_id and refreshtoken.user_id = ? and
+              refreshtoken.refreshtoken_id = refreshtoken_scope.refreshtoken_id',
+        $project->uid, $user->uid,
+    );
+}
+
 
 1;
 

@@ -94,6 +94,14 @@ sub add_scope {
   return $self->query( 'insert ignore into accesstoken_scope (authcode_id,scope_id) values(?,?)', $auth_code->uid, $scope->uid );
 }
 
+sub revoke {
+  my( $self, $accesstoken, $user ) = @_;
+  return $self->query(
+    'delete accesstoken_scope, accesstoken from accesstoken, accesstoken_scope
+      where accesstoken.user_id = ? and accesstoken.accesstoken_id = ? and accesstoken.accesstoken_id = accesstoken_scope.accesstoken_id',
+    $user->uid, $accesstoken->uid );
+}
+
 bake();
 
 1;

@@ -51,59 +51,67 @@ sub run {
   return $self->my_wrap( 'OAuth2', '<p>You have not approved any applications to use your credentials</p>' ) unless $user;
 
   my $padap    = $self->adaptor('Project');
-  my $projects = $user->fetch_projects;
+  my $projects = $user->fetch_permitted_projects;
   my $access   = $user->fetch_accesstokens;
   my $refresh  = $user->fetch_refreshtokens;
-
+  unless ( @{$projects} ) {
+    return $self->html->wrap('My applications and tokens', '<p>You currently have no applications permitted</p>' )->ok;
+  }
   my $project_cache;
   ## no critic (LongChainsOfMethodCalls)
-  return $self->html->wrap('My projects and tokens',
-    $self->tabs
-         ->add_tab( 't_my', 'My projects',
-           $self->my_table
-                ->add_columns(
-                  { 'key' => 'get_code',        'label' => 'Code', },
-                  { 'key' => 'get_name',        'label' => 'Name', },
-                  { 'key' => 'get_description', 'label' => 'Description', },
-                  { 'key' => 'logo',            'label' => 'Logo', 'template' => '<img src="/oa2/Logo/[[u:get_code]]" height="[[u:get_logo_height]]" width="[[u:get_logo_width]]" alt="[logo]">' },
-                )
-                ->add_data( @{$projects} )
-                ->render,
+  my $scopes    = $self->adaptor( 'Scope' )->fetch_all_scopes;
+  my $scope_map = {};
+  $scope_map->{ $_->uid } = $_ foreach @{$scopes};
+
+  my $tabs = $self->tabs->add_tab( 't_my', 'Permitted applications',
+    $self->my_table
+         ->add_columns(
+           { 'key' => 'get_name',        'label' => 'Application', 'template' => '<div class="left" style="padding-right: 1em"><img src="/oa2/Logo/[[u:get_code]]" height="[[u:get_logo_height]]" width="[[u:get_logo_width]]" alt="[logo]"></div><strong>[[h:get_name]]</strong><br />[[h:get_description]]' },
+           { 'key' => 'permissions',     'label' => 'Permissions', 'align' => 'c',
+             'code_ref' => sub {
+               my $allowed_scopes = $_[0]->get_attribute( 'scopes' );
+               my @scopes = map { $allowed_scopes->{$_} eq 'yes' ? $scope_map->{$_}->get_name : () } keys %{$allowed_scopes};
+               return join q(, ), sort @scopes;
+             },
+           },
+           { 'key' => '_remove', 'label' => 'Remove', 'link' => '/oa2/Remove/[[h:get_code]]', 'template' => 'Remove application', 'align' => 'c' },
+           { 'key' => '_revoke', 'label' => 'Revoke', 'link' => '/oa2/Revoke/Project/[[h:get_code]]', 'template' => 'Revoke all tokens', 'align' => 'c' },
          )
-         ->add_tab( 't_project', 'Permitted projects', q(),
-         )
-         ->add_tab( 't_access', 'Access Tokens',
-           $self->my_table
-                ->add_columns(
-                  { 'key' => 'get_uuid',       'label' => 'Code',   },
-                  { 'key' => 'get_expires_at', 'label' => 'Expiry',  'format' => 'date' },
-                  { 'key' => 'get_name',       'label' => 'Project',
-                    'code_ref' => sub {
-                      my $id = $_[0]->get_project_id;
-                      $project_cache->{$id} ||= $padap->fetch_project( $id );
-                      return $project_cache->{$id}->get_name;
-                    }   },
-                )
-                ->add_data( @{$access} )
-                ->render,
-         )
-         ->add_tab( 't_refresh', 'Refresh tokens',
-           $self->my_table
-                ->add_columns(
-                  { 'key' => 'get_uuid',       'label' => 'Code',   },
-                  { 'key' => 'get_expires_at', 'label' => 'Expiry', 'format' => 'date' },
-                  { 'key' => 'get_name',       'label' => 'Project',
-                    'code_ref' => sub {
-                      my $id = $_[0]->get_project_id;
-                      $project_cache->{$id} ||= $padap->fetch_project( $id );
-                      return $project_cache->{$id}->get_name;
-                    }   },
-                )
-                ->add_data( @{$refresh} )
-                ->render,
-         )
+         ->add_data( @{$projects} )
          ->render,
-  )->ok;
+  );
+
+  $tabs->add_tab( 't_access', 'Access Tokens',
+    $self->my_table
+         ->add_columns(
+           { 'key' => 'get_name',       'label' => 'Application',
+             'code_ref' => sub {
+               my $id = $_[0]->get_project_id;
+               $project_cache->{$id} ||= $padap->fetch_project( $id );
+               return $project_cache->{$id}->get_name;
+             }   },
+           { 'key' => '_revoke', 'label' => 'Revoke', 'link' => '/oa2/Revoke/AccessToken/[[h:get_uuid]]', 'template' => 'Revoke token', 'align' => 'c' },
+         )
+         ->add_data( @{$access} )
+         ->render,
+  ) if @{$access};
+
+  $tabs->add_tab( 't_refresh', 'Refresh tokens',
+    $self->my_table
+         ->add_columns(
+           { 'key' => 'get_name',       'label' => 'Application',
+             'code_ref' => sub {
+               my $id = $_[0]->get_project_id;
+               $project_cache->{$id} ||= $padap->fetch_project( $id );
+               return $project_cache->{$id}->get_name;
+             }   },
+           { 'key' => '_revoke', 'label' => 'Revoke', 'link' => '/oa2/Revoke/RefreshToken/[[h:get_uuid]]', 'template' => 'Revoke token', 'align' => 'c' },
+         )
+         ->add_data( @{$refresh} )
+         ->render,
+  ) if @{$refresh};
+
+  return $self->html->wrap('My applications and tokens', $tabs->render )->ok;
   ## use critic
 }
 
