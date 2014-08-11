@@ -58,7 +58,7 @@ sub initialize_form {
       my $img = $self->{'oa_project'}->get_image;
       $self->add( 'Information', 'desc' )->set_caption(
         sprintf '<img class="left" src="/oa2/Logo/%s" height="%d" width="%d" alt="*" style="margin-right: 1em" />%s<div class="clear">&nbsp;</div>',
-          $self->{'oa_client'}->get_code, $img->{'logo_height'},
+          $self->{'oa_project'}->get_code, $img->{'logo_height'},
           $img->{'logo_width'}, $self->encode( $self->{'oa_project'}->get_description ) );
       $self->add( 'Information', 'This application is requesting to authenticate you with your account details' );
     }
